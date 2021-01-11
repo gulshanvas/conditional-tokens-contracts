@@ -58,11 +58,23 @@ contract ConditionalTokens is ERC1155 {
     /// Denominator is also used for checking if the condition has been resolved. If the denominator is non-zero, then the condition has been resolved.
     mapping(bytes32 => uint) public payoutDenominator;
 
+    address public governance;
+
+    constructor(address _governance) public {
+        governance = _governance;
+    }
+
+    modifier onlyGovernance(address _governance) {
+        require(governance == _governance, "Only governance address can call");
+        _;
+    }
+
+
     /// @dev This function prepares a condition by initializing a payout vector associated with the condition.
     /// @param oracle The account assigned to report the result for the prepared condition.
     /// @param questionId An identifier for the question to be answered by the oracle.
     /// @param outcomeSlotCount The number of outcome slots which should be used for this condition. Must not exceed 256.
-    function prepareCondition(address oracle, bytes32 questionId, uint outcomeSlotCount) external {
+    function prepareCondition(address oracle, bytes32 questionId, uint outcomeSlotCount) onlyGovernance(msg.sender) external {
         // Limit of 256 because we use a partition array that is a number of 256 bits.
         require(outcomeSlotCount <= 256, "too many outcome slots");
         require(outcomeSlotCount > 1, "there should be more than one outcome slot");
@@ -70,6 +82,13 @@ contract ConditionalTokens is ERC1155 {
         require(payoutNumerators[conditionId].length == 0, "condition already prepared");
         payoutNumerators[conditionId] = new uint[](outcomeSlotCount);
         emit ConditionPreparation(conditionId, oracle, questionId, outcomeSlotCount);
+    }
+
+    function updateGovernance(address _governance) public onlyGovernance(msg.sender) {
+        require(_governance != address(0), "Governance address must not be 0");
+
+
+        governance = _governance;
     }
 
     /// @dev Called by the oracle for reporting results of conditions. Will set the payout vector for the condition with the ID ``keccak256(abi.encodePacked(oracle, questionId, outcomeSlotCount))``, where oracle is the message sender, questionId is one of the parameters of this function, and outcomeSlotCount is the length of the payouts parameter, which contains the payoutNumerators for each outcome slot of the condition.

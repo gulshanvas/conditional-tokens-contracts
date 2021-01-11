@@ -25,15 +25,24 @@ contract("ConditionalTokens", function(accounts) {
     eoaTrader,
     fwdExecutor,
     safeExecutor,
-    counterparty
+    counterparty,
+    governance
   ] = accounts;
 
+  console.log("accounts in test : ", accounts);
+
+  console.log("governance : ", governance);
+
   beforeEach("deploy ConditionalTokens", async function() {
-    this.conditionalTokens = await ConditionalTokens.new();
+    this.conditionalTokens = await ConditionalTokens.new(governance);
   });
 
   describe("prepareCondition", function() {
     it("should not be able to prepare a condition with no outcome slots", async function() {
+      console.log(
+        "this.conditionalTokens : ",
+        this.conditionalTokens.governance.call()
+      );
       const questionId = randomHex(32);
       const outcomeSlotCount = 0;
 
@@ -41,7 +50,10 @@ contract("ConditionalTokens", function(accounts) {
         this.conditionalTokens.prepareCondition(
           oracle,
           questionId,
-          outcomeSlotCount
+          outcomeSlotCount,
+          {
+            from: governance
+          }
         ),
         "there should be more than one outcome slot"
       );
@@ -55,7 +67,10 @@ contract("ConditionalTokens", function(accounts) {
         this.conditionalTokens.prepareCondition(
           oracle,
           questionId,
-          outcomeSlotCount
+          outcomeSlotCount,
+          {
+            from: governance
+          }
         ),
         "there should be more than one outcome slot"
       );
@@ -71,7 +86,10 @@ contract("ConditionalTokens", function(accounts) {
         ({ logs: this.logs } = await this.conditionalTokens.prepareCondition(
           oracle,
           questionId,
-          outcomeSlotCount
+          outcomeSlotCount,
+          {
+            from: governance
+          }
         ));
       });
 
@@ -101,7 +119,10 @@ contract("ConditionalTokens", function(accounts) {
           this.conditionalTokens.prepareCondition(
             oracle,
             questionId,
-            outcomeSlotCount
+            outcomeSlotCount,
+            {
+              from: governance
+            }
           ),
           "condition already prepared"
         );
@@ -146,7 +167,10 @@ contract("ConditionalTokens", function(accounts) {
             await this.conditionalTokens.prepareCondition(
               oracle,
               questionId,
-              outcomeSlotCount
+              outcomeSlotCount,
+              {
+                from: governance
+              }
             );
           });
 
@@ -547,7 +571,10 @@ contract("ConditionalTokens", function(accounts) {
                 await this.conditionalTokens.prepareCondition(
                   oracle,
                   questionId,
-                  outcomeSlotCount
+                  outcomeSlotCount,
+                  {
+                    from: governance
+                  }
                 );
               }
             });
