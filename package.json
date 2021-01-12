@@ -13,7 +13,7 @@
     "injectnetinfo": "tnt iN",
     "extractnetinfo": "tnt eN",
     "resetnetinfo": "truffle networks --clean && tnt iN",
-    "prepack": "eslint . && npm run lint-contracts && truffle compile && truffle networks --clean && tnt iN && npx tnt cleanBuild"
+    "prepack": "npm install && eslint . && npm run lint-contracts && truffle compile && truffle networks --clean && tnt iN && npx tnt cleanBuild"
   },
   "keywords": [
     "Ethereum",
@@ -26,7 +26,8 @@
   "license": "LGPL-3.0",
   "dependencies": {
     "openzeppelin-solidity": "2.3.0",
-    "workerpool": "6.0.0"
+    "workerpool": "6.0.0",
+    "solium": "^1.2.5"
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.9",
