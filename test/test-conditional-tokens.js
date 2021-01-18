@@ -1,4 +1,4 @@
-const ethSigUtil = require("eth-sig-util");
+// const ethSigUtil = require("eth-sig-util");
 
 const { expectEvent, expectRevert } = require("openzeppelin-test-helpers");
 const { toBN, randomHex } = web3.utils;
@@ -12,8 +12,8 @@ const {
 const ConditionalTokens = artifacts.require("ConditionalTokens");
 const ERC20Mintable = artifacts.require("MockCoin");
 const Forwarder = artifacts.require("Forwarder");
-const DefaultCallbackHandler = artifacts.require("DefaultCallbackHandler.sol");
-const GnosisSafe = artifacts.require("GnosisSafe");
+// const DefaultCallbackHandler = artifacts.require("DefaultCallbackHandler.sol");
+// const GnosisSafe = artifacts.require("GnosisSafe");
 
 const NULL_BYTES32 = `0x${"0".repeat(64)}`;
 
@@ -30,6 +30,8 @@ contract("ConditionalTokens", function(accounts) {
   ] = accounts;
 
   console.log("accounts in test : ", accounts);
+
+  console.log("safeExecutor: ", safeExecutor);
 
   console.log("governance : ", governance);
 
@@ -879,112 +881,112 @@ contract("ConditionalTokens", function(accounts) {
       shouldSplitAndMergePositions(trader);
     });
 
-    context.skip("with a Gnosis Safe", function() {
-      let trader = {};
-      before(async function() {
-        const zeroAccount = `0x${"0".repeat(40)}`;
-        const safeOwners = Array.from({ length: 2 }, () =>
-          web3.eth.accounts.create()
-        );
-        safeOwners.sort(({ address: a }, { address: b }) =>
-          a.toLowerCase() < b.toLowerCase() ? -1 : a === b ? 0 : 1
-        );
-        const callbackHandler = await DefaultCallbackHandler.new();
-        const gnosisSafe = await GnosisSafe.new();
-        await gnosisSafe.setup(
-          safeOwners.map(({ address }) => address),
-          safeOwners.length,
-          zeroAccount,
-          "0x",
-          callbackHandler.address,
-          zeroAccount,
-          0,
-          zeroAccount
-        );
-        const gnosisSafeTypedDataCommon = {
-          types: {
-            EIP712Domain: [{ name: "verifyingContract", type: "address" }],
-            SafeTx: [
-              { name: "to", type: "address" },
-              { name: "value", type: "uint256" },
-              { name: "data", type: "bytes" },
-              { name: "operation", type: "uint8" },
-              { name: "safeTxGas", type: "uint256" },
-              { name: "baseGas", type: "uint256" },
-              { name: "gasPrice", type: "uint256" },
-              { name: "gasToken", type: "address" },
-              { name: "refundReceiver", type: "address" },
-              { name: "nonce", type: "uint256" }
-            ],
-            SafeMessage: [{ name: "message", type: "bytes" }]
-          },
-          domain: {
-            verifyingContract: gnosisSafe.address
-          }
-        };
+    // context.skip("with a Gnosis Safe", function() {
+    //   let trader = {};
+    //   before(async function() {
+    //     const zeroAccount = `0x${"0".repeat(40)}`;
+    //     const safeOwners = Array.from({ length: 2 }, () =>
+    //       web3.eth.accounts.create()
+    //     );
+    //     safeOwners.sort(({ address: a }, { address: b }) =>
+    //       a.toLowerCase() < b.toLowerCase() ? -1 : a === b ? 0 : 1
+    //     );
+    //     const callbackHandler = await DefaultCallbackHandler.new();
+    //     const gnosisSafe = await GnosisSafe.new();
+    //     await gnosisSafe.setup(
+    //       safeOwners.map(({ address }) => address),
+    //       safeOwners.length,
+    //       zeroAccount,
+    //       "0x",
+    //       callbackHandler.address,
+    //       zeroAccount,
+    //       0,
+    //       zeroAccount
+    //     );
+    //     const gnosisSafeTypedDataCommon = {
+    //       types: {
+    //         EIP712Domain: [{ name: "verifyingContract", type: "address" }],
+    //         SafeTx: [
+    //           { name: "to", type: "address" },
+    //           { name: "value", type: "uint256" },
+    //           { name: "data", type: "bytes" },
+    //           { name: "operation", type: "uint8" },
+    //           { name: "safeTxGas", type: "uint256" },
+    //           { name: "baseGas", type: "uint256" },
+    //           { name: "gasPrice", type: "uint256" },
+    //           { name: "gasToken", type: "address" },
+    //           { name: "refundReceiver", type: "address" },
+    //           { name: "nonce", type: "uint256" }
+    //         ],
+    //         SafeMessage: [{ name: "message", type: "bytes" }]
+    //       },
+    //       domain: {
+    //         verifyingContract: gnosisSafe.address
+    //       }
+    //     };
 
-        async function gnosisSafeCall(contract, method, ...args) {
-          const safeOperations = {
-            CALL: 0,
-            DELEGATECALL: 1,
-            CREATE: 2
-          };
-          const nonce = await gnosisSafe.nonce();
+    //     async function gnosisSafeCall(contract, method, ...args) {
+    //       const safeOperations = {
+    //         CALL: 0,
+    //         DELEGATECALL: 1,
+    //         CREATE: 2
+    //       };
+    //       const nonce = await gnosisSafe.nonce();
 
-          // ???: why is reformatting the args necessary here?
-          args = args.map(arg =>
-            Array.isArray(arg) ? arg.map(a => a.toString()) : arg.toString()
-          );
+    //       // ???: why is reformatting the args necessary here?
+    //       args = args.map(arg =>
+    //         Array.isArray(arg) ? arg.map(a => a.toString()) : arg.toString()
+    //       );
 
-          const txData = contract.contract.methods[method](...args).encodeABI();
-          const signatures = safeOwners.map(safeOwner =>
-            ethSigUtil.signTypedData(
-              Buffer.from(safeOwner.privateKey.replace("0x", ""), "hex"),
-              {
-                data: Object.assign(
-                  {
-                    primaryType: "SafeTx",
-                    message: {
-                      to: contract.address,
-                      value: 0,
-                      data: txData,
-                      operation: safeOperations.CALL,
-                      safeTxGas: 0,
-                      baseGas: 0,
-                      gasPrice: 0,
-                      gasToken: zeroAccount,
-                      refundReceiver: zeroAccount,
-                      nonce
-                    }
-                  },
-                  gnosisSafeTypedDataCommon
-                )
-              }
-            )
-          );
-          const tx = await gnosisSafe.execTransaction(
-            contract.address,
-            0,
-            txData,
-            safeOperations.CALL,
-            0,
-            0,
-            0,
-            zeroAccount,
-            zeroAccount,
-            `0x${signatures.map(s => s.replace("0x", "")).join("")}`,
-            { from: safeExecutor }
-          );
-          if (tx.logs[0] && tx.logs[0].event === "ExecutionFailed")
-            throw new Error(`Safe transaction ${method}(${args}) failed`);
-          return tx;
-        }
+    //       const txData = contract.contract.methods[method](...args).encodeABI();
+    //       const signatures = safeOwners.map(safeOwner =>
+    //         ethSigUtil.signTypedData(
+    //           Buffer.from(safeOwner.privateKey.replace("0x", ""), "hex"),
+    //           {
+    //             data: Object.assign(
+    //               {
+    //                 primaryType: "SafeTx",
+    //                 message: {
+    //                   to: contract.address,
+    //                   value: 0,
+    //                   data: txData,
+    //                   operation: safeOperations.CALL,
+    //                   safeTxGas: 0,
+    //                   baseGas: 0,
+    //                   gasPrice: 0,
+    //                   gasToken: zeroAccount,
+    //                   refundReceiver: zeroAccount,
+    //                   nonce
+    //                 }
+    //               },
+    //               gnosisSafeTypedDataCommon
+    //             )
+    //           }
+    //         )
+    //       );
+    //       const tx = await gnosisSafe.execTransaction(
+    //         contract.address,
+    //         0,
+    //         txData,
+    //         safeOperations.CALL,
+    //         0,
+    //         0,
+    //         0,
+    //         zeroAccount,
+    //         zeroAccount,
+    //         `0x${signatures.map(s => s.replace("0x", "")).join("")}`,
+    //         { from: safeExecutor }
+    //       );
+    //       if (tx.logs[0] && tx.logs[0].event === "ExecutionFailed")
+    //         throw new Error(`Safe transaction ${method}(${args}) failed`);
+    //       return tx;
+    //     }
 
-        trader.address = gnosisSafe.address;
-        trader.execCall = gnosisSafeCall;
-      });
+    //     trader.address = gnosisSafe.address;
+    //     trader.execCall = gnosisSafeCall;
+    //   });
 
-      shouldSplitAndMergePositions(trader);
-    });
+    //   shouldSplitAndMergePositions(trader);
+    // });
   });
 });
